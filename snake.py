@@ -15,6 +15,8 @@ import gamePins
 
 gamePins.gameSetup()
 
+scoreboard = gamePins.getScores("Snake")
+
 screen=pygame.display.set_mode((1024,718),pygame.FULLSCREEN)
 pygame.display.set_caption("Hisar Snake!")
 #Creating 4 boxes and Background.
@@ -57,10 +59,10 @@ class Bait():
 def checkSnake():
     for x in xrange(len(snake.Arr)):
         if x==0:
-            pygame.draw.rect(screen,(255,0,252),Rect((103+32*snake.Arr[x][0],153+32*snake.Arr[x][1]),(26,26)))
+            pygame.draw.rect(screen,(255,0,252),Rect((153+32*snake.Arr[x][0],153+32*snake.Arr[x][1]),(26,26)))
         elif x<snake.length:
-            pygame.draw.rect(screen,(180,255,252),Rect((103+32*snake.Arr[x][0],153+32*snake.Arr[x][1]),(26,26)))#purple
-            pygame.draw.rect(screen,(255,100,252),Rect((108+32*bait.x,158+32*bait.y),(16,16)))
+            pygame.draw.rect(screen,(180,255,252),Rect((153+32*snake.Arr[x][0],153+32*snake.Arr[x][1]),(26,26)))#purple
+            pygame.draw.rect(screen,(255,100,252),Rect((158+32*bait.x,158+32*bait.y),(16,16)))
         else:
             Grid[snake.Arr[x][0]][snake.Arr[x][1]]=0
     snake.Arr=snake.Arr[0:snake.length]
@@ -80,24 +82,37 @@ def bg():#draws the background
     text2 = font.render("Score  "+str(Score), True,(255,255,255))
     text5 = font.render("Level  "+str(Score/500), True,(255,255,255))
     screen.blit(background,(0,0))
-    pygame.draw.rect(screen,(255,255,255),Rect((100,150),(640,480)),2)
-    screen.blit(text1,(250.,30.))
-    screen.blit(text2,(775.,150.))
-    screen.blit(text3,(450.,680.))
-    screen.blit(text5,(775.,250.))
+    pygame.draw.rect(screen,(255,255,255),Rect((150,150),(640,480)),2)
+    screen.blit(text1,(300.,30.))
+    screen.blit(text2,(825.,150.))
+    screen.blit(text3,(500.,680.))
+    screen.blit(text5,(825.,250.))
      
 
-    screen.blit(directDown,(840,340))
-    screen.blit(directUp,(840,420))
-    screen.blit(directRight,(840,500))
-    screen.blit(directLeft,(840,580))
+    screen.blit(directDown,(900,340))
+    screen.blit(directUp,(900,420))
+    screen.blit(directRight,(900,500))
+    screen.blit(directLeft,(900,580))
 
-    pygame.draw.polygon(screen,(225,240,229),[[775,335],[815,335],[795,370]],0)
-    pygame.draw.polygon(screen,(225,240,229),[[775,450],[815,450],[795,415]],0)
-    pygame.draw.polygon(screen,(225,240,229),[[775,495],[775,540],[815,518]],0)
-    pygame.draw.polygon(screen,(225,240,229),[[815,575],[815,620],[775,598]],0)
-    pygame.draw.circle(screen, (red), (795,680),20,0) 
-    screen.blit(directExit,(840,660))
+    pygame.draw.polygon(screen,(225,240,229),[[825,335],[865,335],[845,370]],0)
+    pygame.draw.polygon(screen,(225,240,229),[[825,450],[865,450],[845,415]],0)
+    pygame.draw.polygon(screen,(225,240,229),[[825,495],[825,540],[865,518]],0)
+    pygame.draw.polygon(screen,(225,240,229),[[865,575],[865,620],[825,598]],0)
+    pygame.draw.circle(screen, (red), (845,680),20,0) 
+    screen.blit(directExit,(890,660))
+    line = 0
+    high = font.render("High", True, (255,255,255))
+    screen.blit(high, (20, 160))
+    highScores = font.render("Scores", True, (255,255,255))
+    screen.blit(highScores, (0, 200))
+    for player in scoreboard:
+		results = player.split()
+		line+=1
+		winners = font.render(str(line)+"  "+str(results[0]), True, (255,255,255))
+		screen.blit(winners, (0, 210+line*75))
+		point = font.render(str(results[1]), True, (255,255,255))
+		screen.blit(point, (0, 250+line*75))
+
 #clock and font objects
 clock = pygame.time.Clock()
 all_fonts = pygame.font.get_fonts()
@@ -142,6 +157,7 @@ doAll=True
 initial_time=time.time()
 snake=Snake()
 bait=Bait()
+returnHome = False
 while True:
     if not GPIO.input(gamePins.red):
 	execfile('launchGPIO.py')
@@ -149,6 +165,17 @@ while True:
         if event.type == KEYDOWN:
 	    if event.key == K_q:
 	        exit()
+	    if event.key == K_w and not snake.mov_dir==down:
+	        snake.mov_dir=up
+	    elif event.key == K_s and not snake.mov_dir==up:
+	        snake.mov_dir=down
+	    elif event.key == K_a and not snake.mov_dir==right:
+	        snake.mov_dir=left
+	    elif event.key == K_d and not snake.mov_dir==left:
+	        snake.mov_dir=right
+	    elif event.key == K_SPACE:
+		returnHome = True
+
     if doAll:
 	if not buttonChanged:
 	  if not GPIO.input(gamePins.up) and not snake.mov_dir==down:
@@ -175,10 +202,14 @@ while True:
                 doAll= False
     elif not doAll:
         gameOver()
-        if not GPIO.input(gamePins.red):
+        if not GPIO.input(gamePins.red) or returnHome:
             clearGrid()
             doAll=True
             time.sleep(1)
-            execfile("launchGPIO.py")
+	    if gamePins.isHighScore("Snake", Score):
+		gamePins.newEntry("Snake", Score)
+		execfile("leaderboards.py")
+            else:
+		execfile("launchGPIO.py")
     pygame.display.update()
     

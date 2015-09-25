@@ -17,6 +17,7 @@ pygame.init()
 screen=pygame.display.set_mode((1024,718),pygame.FULLSCREEN)
 pygame.display.set_caption("PacMan!")
 pygame.font.init()
+font = pygame.font.Font("Fonts/ARCADECLASSIC.TTF",40)
 fontSmall = pygame.font.Font("Fonts/ARCADECLASSIC.TTF",30)
 
 #Initialize Back Ground
@@ -31,13 +32,16 @@ eyes = pygame.image.load('PacMan/eyes.png')
 gameOverImage = pygame.image.load('PacMan/gameover.png')
 youwin = pygame.image.load('PacMan/youwin.png')
 
+scoreboard = gamePins.getScores("PacMan")
+
+
 red, yellow, green, blue=(235,53,47),(235,230,45),(0,185,10),(73,170,235)
 directUp = fontSmall.render("up", True,(255,255,255))
 directDown = fontSmall.render("down", True,(255,255,255))
 directLeft = fontSmall.render("left", True,(255,255,255))
 directRight = fontSmall.render("right", True,(255,255,255))
 directExit = fontSmall.render("exit", True,(255,255,255))
-
+scores = font.render("Score", True,(255,255,255))
 
 blinkyImages = [None, pygame.image.load('PacMan/blinky1.png'), pygame.image.load('PacMan/blinky2.png'), pygame.image.load('PacMan/blinky-2.png'), pygame.image.load('PacMan/blinky-1.png')]
 pinkyImages = [None, pygame.image.load('PacMan/pinky1.png'), pygame.image.load('PacMan/pinky2.png'), pygame.image.load('PacMan/pinky-2.png'), pygame.image.load('PacMan/pinky-1.png')]
@@ -49,6 +53,7 @@ score = 0
 ghost = 0
 lives = 3
 gameOver = False
+
 
 grid = [[4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4], # Field for the game
         [4,3,2,2,2,2,2,2,2,4,4,2,2,2,2,2,2,2,3,4], # 0: Blank, 1: Mr. Pac, 2: Food, 3: Power Up!, 4: Wall, 5: Blinky, 6: Pinky, 7: Clyde, 8: Inky, 9: Spawner
@@ -82,6 +87,25 @@ class Pac:
 		self.images = [pygame.image.load('PacMan/pacman2.png'), myimage, pygame.transform.rotate(myimage,-90), pygame.transform.rotate(myimage, 90), pygame.transform.rotate(myimage,180)]
 
 	def turns(self): # Checks buttons
+		for event in pygame.event.get():
+			if event.type == QUIT:
+				exit()
+			if event.type == KEYDOWN:
+				if event.key == K_q:
+					exit()
+				if event.key == K_d and self.direction != -1:
+					if self.movable(1):
+						self.direction = 1
+				elif event.key == K_a and self.direction != 1:
+					if self.movable(-1):
+						self.direction = -1
+				elif event.key == K_s and self.direction != -2:
+					if self.movable(2):
+						self.direction = 2
+				elif event.key == K_w and self.direction != 2:
+					if self.movable(-2):
+						self.direction = -2    
+	
 		if not GPIO.input(gamePins.up) and not self.direction==2 and self.movable(-2):
 	        	self.direction=-2
 		elif not GPIO.input(gamePins.down) and not self.direction==-2 and self.movable(2):
@@ -90,10 +114,7 @@ class Pac:
 	        	self.direction=1
 		elif not GPIO.input(gamePins.left) and not self.direction ==1 and self.movable(-1):
 			self.direction=-1
-		for event in pygame.event.get():
-			if event.type == KEYDOWN:
-				if event.key == K_q:
-					exit()  
+		 
 	def move(self): # Moves the Ghost a step on his choosen direction
 		global score
 		global ghost
@@ -154,7 +175,9 @@ class Ghosts: # Default Blinky behaviour, follows pacman where ever he goes
 		self.image = self.images[direction]
 
 	def checkAlive(self): # Checks collision with PacMan in Scared Mode
-		if not self.mode and (grid[self.y][self.x] == 1 or self.replacement == 1) :
+		global score
+		if not self.dead and not self.mode and (grid[self.y][self.x] == 1 or self.replacement == 1) :
+			score += 10
 			self.dead = True
 
 	def moveFront(self): # Moves the Ghost a step on his choosen direction
@@ -178,7 +201,7 @@ class Ghosts: # Default Blinky behaviour, follows pacman where ever he goes
 			self.dead = False
 			
 		if self.replacement == 1 and self.mode and not self.dead: # Checks collision with PacMan in Regular Mode
-			self.replacement = 2
+			self.replacement = 0
 			gameOver = True
 
 		if self.dead: #Image in current tile
@@ -322,6 +345,24 @@ def modifyGrid(): # Creates and fills in the game area
 				screen.blit(eyes, Rect(190+x*32+2,38+y*32+2,28,28))
 	for i in range(lives): #Shows how many lives the player has
 		screen.blit(myimage, Rect(20 + 30*i,20,28,28))
+	screen.blit(scores, (20, 70))
+	points = font.render(str(score*10), True, (255,255,255))
+	screen.blit(points, (20, 100))
+	high = font.render("High", True, (255,255,255))
+	screen.blit(high, (40, 200))
+	highScores = font.render("Scores", True, (255,255,255))
+	screen.blit(highScores, (20, 240))
+
+
+	line = 0
+	for player in scoreboard:
+		results = player.split()
+		line+=1
+		winners = font.render(str(line)+"  "+str(results[0]), True, (255,255,255))
+		screen.blit(winners, (20, 260+line*75))
+		point = font.render(str(results[1]), True, (255,255,255))
+		screen.blit(point, (20, 300+line*75))
+
 
 def resetGame(): # Readies game for re-play, resets characters
 	global ghosts
@@ -355,48 +396,66 @@ ghosts = [Ghosts(1,9,1, blinkyImages, 5), Pinky(18,9,-1, pinkyImages, 6), Clyde(
 modifyGrid()
 
 while True:
-    if lives > 0 and isGridEmpty(): #Checks if player still has lives or if and more food is left on the field.
-        multiplier=8.5 #must be odd
-        current_time=int((time.time()-initial_time)*multiplier)
-	if not GPIO.input(gamePins.red):
-	    execfile('launchGPIO.py')
-        if current_time  > old_time:
-        	if current_time % 2 == 0:
-        		pacman.turns()
-   	       		pacman.modifyImage()
-   	       		pacman.move()
-   	       		for i in ghosts:
-   	       			i.checkAlive()
+	if lives > 0 and isGridEmpty(): #Checks if player still has lives or if and more food is left on the field.
+		multiplier=8.5 #must be odd
+		current_time=int((time.time()-initial_time)*multiplier)
+		if not GPIO.input(gamePins.red):
+			execfile('launchGPIO.py')
+		if current_time  > old_time:
+     		  	if current_time % 2 == 0:
+      	  			pacman.turns()
+   		       		pacman.modifyImage()
+   	       			pacman.move()
+   	       			for i in ghosts:
+   	       				i.checkAlive()
 
-   	       	if current_time % 3 == 0:
-   	       		for i in ghosts:
-   	       			i.mode = (ghost == 0)
-   	       			i.move()
-   	       		if ghost != 0:
-   	       			ghost -= 1
+   	       		if current_time % 3 == 0:
+   	       			for i in ghosts:
+   	       				i.mode = (ghost == 0)
+   	       				i.move()
+   	       			if ghost != 0:
+   	       				ghost -= 1
 
-        	modifyGrid()
-        	old_time=current_time
-        	if gameOver:
-        		resetGame()
-        		lives -= 1
-        		gameOver = False
-    else:
-	if not GPIO.input(gamePins.red):
-	    execfile('launchGPIO.py')
-    	multiplier=3 #must be odd
-        current_time=int((time.time()-initial_time)*multiplier)
-        modifyGrid()
-        pacman.turns()
-        if current_time % 2 == 0:
-        	if lives == 0:
-        		screen.blit(gameOverImage, (192,220))
-        	elif not isGridEmpty():
-        		screen.blit(youwin, (192,220))
-	pygame.draw.circle(screen, (red), (870,555),20,0) 
-	screen.blit(directExit,(920,540))
+        		modifyGrid()
+        		old_time=current_time
+        		if gameOver:
+        			resetGame()
+        			lives -= 1
+        			gameOver = False
+	else:
+		if not GPIO.input(gamePins.red):
+			if gamePins.isHighScore("PacMan", score) > 0:
+				execfile('leaderboards.py')
+			else:
+				execfile('launchGPIO.py')
+		
+		for event in pygame.event.get():
+			if event.type == QUIT:
+				exit()
+			if event.type == KEYDOWN:
+				if event.key == K_q:
+					exit()
+				elif event.key == K_SPACE:
+					if gamePins.isHighScore("PacMan", score*10) > 0:
+						gamePins.newEntry("PacMan", score * 10)
+						execfile("leaderboards.py")
+					else:
+						execfile("launchGPIO.py")
 
-    pygame.display.update()
+
+		multiplier=3 #must be odd
+		current_time=int((time.time()-initial_time)*multiplier)
+		modifyGrid()
+
+		if current_time % 2 == 0:
+			if lives == 0:
+				screen.blit(gameOverImage, (192,220))
+			elif not isGridEmpty():
+				screen.blit(youwin, (192,220))
+		pygame.draw.circle(screen, (red), (870,555),20,0) 
+		screen.blit(directExit,(920,540))
+
+	pygame.display.update()
 
     
 

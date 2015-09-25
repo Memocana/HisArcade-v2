@@ -22,3 +22,44 @@ def gameSetup():
 	GPIO.setup(up, GPIO.IN, pull_up_down = GPIO.PUD_UP) #UP
 	GPIO.setup(right, GPIO.IN, pull_up_down = GPIO.PUD_UP) #RIGHT
 	GPIO.setup(left, GPIO.IN, pull_up_down = GPIO.PUD_UP) #LEFT
+
+def getScores(gameName): #gameName = folder of score file, returns top three players
+	fileName = gameName+"/score"
+	file = open(fileName, "r")
+	bests = []
+	x = 0
+	for line in file:
+		if line != "\n" and line != "":
+			bests.append(line[:-1])
+		x+=1
+	file.close()
+	return bests
+
+def isHighScore(gameName, point):
+	fileName = gameName+"/score"
+	file = open(fileName, "r")
+	bests = ["","",""]
+	x = 0
+	for line in file:
+		if line != "\n" and line != "":
+			bests[x] = line[:-1].split()[1]
+			x+=1
+	file.close()
+
+
+	if bests[0] == "" or point > int(bests[0]):
+		return 1
+	if bests[1] == "" or point > int(bests[1]):
+		return 2
+	if bests[2] == "" or point > int(bests[2]):
+		return 3
+
+	file.close()
+	return False
+
+def newEntry(gameName, points):
+	file = open("newEntry", "w")
+	pos = isHighScore(gameName, points)
+	file.write(gameName +" " +str(pos) +" " +str(points))
+
+	
