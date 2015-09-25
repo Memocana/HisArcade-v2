@@ -4,7 +4,7 @@
 #Hisar Schools
 import sys
 import time
-import pygame
+import pygame, serial
 import RPi.GPIO as GPIO
 from pygame.locals import *
 import random

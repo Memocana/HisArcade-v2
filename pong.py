@@ -18,7 +18,7 @@ gamePins.gameSetup()
 
 pygame.init()
 
-screen=pygame.display.set_mode((1280,768), pygame.FULLSCREEN)
+screen=pygame.display.set_mode((1280,768),pygame.FULLSCREEN)
 pygame.display.set_caption("HISAR PONG!")
 
 pygame.font.init()
