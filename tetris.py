@@ -19,6 +19,8 @@ import gamePins
 
 gamePins.gameSetup()
 
+scoreboard = gamePins.getScores("Tetris")
+
 screen=pygame.display.set_mode((1024,718),pygame.FULLSCREEN)
 pygame.display.set_caption("Hisar Tetris!")
 #Creating 4 boxes and Background.
@@ -527,6 +529,7 @@ text1 = font.render("HISAR", True,(255,255,255))
 text5 = font.render("TETRIS", True, (255,255,255))
 text2 = font1.render("Score    "+str(Score), True,(255,255,255))
 text6 = font1.render("Level    "+ str(Score/500+1), True, (255,255,255))
+highScores = font1.render("High Scores", True,(255,255,255))
 text3 = font2.render("by    Bensu  Sicim    Cem  Ersoz", True,(255,255,255))
 text4 = font3.render("GAME OVER", True,(255,255,255))
 reset = font4.render("Press the red button to exit", True,(255,255,255))
@@ -543,6 +546,24 @@ while True:
         if event.type == KEYDOWN:
 	    if event.key == K_q:
 	        exit()
+	    if doAll:
+		if event.key == K_d and movesRight(cShape):
+            	    eraseAll()
+            	    moveAll(right)
+            	    drawAll(cShape)
+	    	    time.sleep(.05)
+        	elif event.key == K_a and movesLeft(cShape):
+            	    eraseAll()
+	    	    moveAll(left)
+	    	    drawAll(cShape)    
+	    	    time.sleep(.05)    
+        	elif event.key == K_s :
+	    	    old_time-=.5
+        	elif event.key == K_w :
+	    	    eraseAll()
+	    	    turnShape(cShape)
+	    	    drawAll(cShape)
+	    	    time.sleep(.1)
     if doAll:
         if not GPIO.input(gamePins.right) and movesRight(cShape):
             eraseAll()
@@ -588,10 +609,11 @@ while True:
         
         text2 = font1.render("Score    "+str(Score), True,(255,255,255))
         
-	screen.blit(text1,(670.,90.))
-        screen.blit(text5, (650.,175))
-        screen.blit(text2,(650.,310.))
-        screen.blit(text6, (650.,390.))
+	screen.blit(text1,(670.,40.))
+        screen.blit(text5, (650.,125))
+        screen.blit(text2,(650.,250.))
+        screen.blit(text6, (650.,300.))
+	screen.blit(highScores,(650.,360.))
         screen.blit(text3,(650.,660.))
 	screen.blit(directDrop,(120,220))
 	screen.blit(directTurn,(120,300))
@@ -603,6 +625,13 @@ while True:
         pygame.draw.polygon(screen,(225,240,229),[[90,455],[90,500],[50,478]],0)
 	pygame.draw.circle(screen, (red), (70,560),20,0) 
 	screen.blit(directExit,(120,540))
+
+	line = 0
+	for player in scoreboard:
+		line+=1
+		winners = font4.render(str(line)+"  "+str(player), True, (255,255,255))
+		screen.blit(winners, (650, 380+line*45))
+
         level=Score/500
         multiplier=(level+2)/10+2
         current_time=int((time.time()-initial_time)*multiplier)
@@ -619,6 +648,12 @@ while True:
                 if event.key == K_UP:
                     clearGrid()
                     doAll=True
+	    elif event.key == K_SPACE:
+		if gamePins.isHighScore("Tetris", Score):
+		    gamePins.newEntry("Tetris", Score)
+		    execfile("leaderboards.py")
+		else:
+		    execfile("launchGPIO.py")
         if not GPIO.input(gamePins.red):
             clearGrid()
             execfile("launchGPIO.py")

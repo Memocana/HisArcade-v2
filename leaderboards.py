@@ -74,9 +74,11 @@ while done:
 				allScores = file.readlines()
 				file.close()
 				file = open(str(player[0]+"/score"),"w")
-
+				repeat = 3
 				addedPlayer = False
-				for x in xrange(0,len(allScores)+1):
+				if len(allScores) < 3:
+					repeat = len(allScores) + 1
+				for x in xrange(0,repeat):
 					if not addedPlayer and x != int(player[1]) - 1:
 						file.write(allScores[x])
 					elif addedPlayer:
